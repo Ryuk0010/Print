@@ -1,0 +1,17 @@
+{
+  "name": "@ryuk01/medium_common",
+  "version": "1.2.1",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Ryuk01",
+  "license": "ISC",
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {},
+  "types": "./dist/index.d.ts",
+  "description": ""
+}
