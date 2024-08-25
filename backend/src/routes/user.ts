@@ -2,7 +2,9 @@ import { Hono } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { decode, sign, verify } from 'hono/jwt'
-import { signupInput, signinInput } from "@ryuk01/medium_common"
+// import { signupInput, signinInput } from "@ryuk01/medium_common"
+import { signupInput } from '../../../common/src/index'
+
 
 export const userRouter = new Hono<{
     Bindings: {
@@ -11,52 +13,62 @@ export const userRouter = new Hono<{
     }
   }>()
 
-  userRouter.post('/signup', async(c) => {
+  userRouter.post('/signup', async (c) => {
     const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate())
+      datasources: {
+        db: {
+          url: c.env.DATABASE_URL,
+        },
+      },
+    }).$extends(withAccelerate());
+  
     const body = await c.req.json();
-    const success = signupInput.safeParse(body);
-    console.log(success)
-    if(!success){
-        c.status(403);
-        return c.json({
-        Message: "Input not valid"
-        })
+    const validation = signupInput.safeParse(body);
+  
+    if (!validation.success) {
+      c.status(403);
+      return c.json({
+        Message: "Input not valid",
+        Errors: validation.error.errors,
+      });
     }
-    try{
+  
+    try {
       const user = await prisma.user.create({
         data: {
           email: body.email,
-          password: body.password,
+          password: body.password, // You should hash this before saving
           name: body.name,
         },
-      })
+      });
   
-      const token = await sign({id: user.id}, c.env.JWT_SECRET);
+      const secret = c.env.JWT_SECRET;
+      const token = await sign({ id: user.id }, secret);
   
       return c.json({
-        jwt: token
+        token,
       });
+    } catch (e) {
+      console.error("Error during signup:", e);
+      return c.json({ error: "Error while signing up" });
     }
-    catch(e){
-      c.status(403);
-        return c.json({ error: "error while signing up" });
-    }
-  })
+  });
   
   userRouter.post('/signin', async (c) => {
     const prisma = new PrismaClient({
       datasourceUrl: c.env.DATABASE_URL,
       }).$extends(withAccelerate())
     const body = await c.req.json();
-    const success = signinInput.safeParse(body);
-    if(!success){
-        c.status(403);
-        return c.json({
-        Message: "Input not valid"
-        })
+    const result = signupInput.safeParse(body);
+    if (!result.success) {
+      console.log(result.error.errors);
+      c.status(403);
+      return c.json({
+        Message: "Input not valid",
+        Errors: result.error.errors,
+      });
     }
+    
     const user = await prisma.user.findUnique({
       where:{
         email: body.email,
@@ -72,3 +84,5 @@ export const userRouter = new Hono<{
     const jwt = await sign({id: user.id}, c.env.JWT_SECRET)
     return c.json({jwt});
   })
+
+

@@ -18,7 +18,7 @@ export const blogRouter = new Hono<{
 	const jwt = c.req.header('Authorization') || "";
     try{
         if (jwt) {
-            const token = jwt.split(' ')[1];
+            const token = jwt;
             const payload = await verify(token, c.env.JWT_SECRET);
             c.set('authorId', payload.id as string);
             await next()
@@ -34,6 +34,51 @@ export const blogRouter = new Hono<{
         return c.json({ error: "unauthorized" });           
     }
 })
+
+// blogRouter.use("/*", async (c, next) => {
+//     const authHeader = c.req.header("authorization") || "";
+
+//     // Check if Authorization header is present
+//     if (!authHeader) {
+//         c.status(403);
+//         return c.json({
+//             message: "Authorization header missing"
+//         });
+//     }
+
+//     try {
+//         // Verify the token
+//         const token = authHeader; // Ensure this is the correct token format
+//         const payload = await verify(token, c.env.JWT_SECRET);
+        
+//         // Debugging information
+//         console.log('Authorization header:', authHeader); // Check the raw header
+//         console.log('Payload:', payload); // Check the decoded payload
+
+//         if (payload) {
+//             // Store the author ID if the token is valid
+//             c.set("authorId", payload.id as string);
+//             await next();
+//         } else {
+//             c.status(403);
+//             return c.json({
+//                 message: "Invalid token"
+//             });
+//         }
+//     } catch (e) {
+//         // Log the error and provide detailed message
+//         console.error('Error during token verification:', e); // Log the error
+
+//         c.status(403);
+//         return c.json({
+//             message: "Invalid token or verification error",
+//             // @ts-ignore
+//             error: e.message // Provide the error message
+//         });
+//     }
+// });
+
+
 
 blogRouter.post('/', async (c) => {
     const prisma = new PrismaClient({
@@ -85,21 +130,39 @@ blogRouter.post('/', async (c) => {
             id: post.id
         })
   })
-  
-
 
   blogRouter.get('/bulk', async (c) => {
-    const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate())
+    try {
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL,
+        }).$extends(withAccelerate());
 
-    const content = await prisma.post.findMany();
-    console.log(content)
-    return c.json({
-       content
-    })
+        const content = await prisma.post.findMany({
+            select: {
+                content: true,
+                title: true,
+                id: true,
+                author: {
+                    select: {
+                        name: true,
+                    }
+                }
+            }
+        });
 
-  })
+        console.log(content); // For debugging
+
+        return c.json({
+            content
+        });
+    } catch (error) {
+        console.error('Database error:', error); // For debugging
+        c.status(500);
+        return c.json({
+            message: "Internal server error"
+        });
+    }
+});
 
 
   blogRouter.get('/:id', async (c) => {
@@ -111,6 +174,16 @@ blogRouter.post('/', async (c) => {
             const post = await prisma.post.findFirst({
                 where: {
                     id: id
+                },
+                select:{
+                    id: true,
+                    title: true,
+                    content: true,
+                    author:{
+                        select:{
+                            name: true
+                        }
+                    }
                 }
             })
             return c.json({

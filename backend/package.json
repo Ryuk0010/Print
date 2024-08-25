@@ -10,10 +10,11 @@
     "@ryuk01/medium_common": "^1.2.1",
     "hono": "^4.5.5",
     "prisma": "^5.18.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240529.0",
-    "wrangler": "^3.72.1"
+    "wrangler": "^3.72.2"
   }
 }
