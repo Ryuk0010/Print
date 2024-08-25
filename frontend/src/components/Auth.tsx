@@ -22,7 +22,8 @@ export const Auth = ({type}: {type:"signup" | "signin"}) => {
             const jwt = response.data.jwt;
             console.log("JWT Token:", jwt);
             localStorage.setItem("token", jwt);
-            navigate("/blogs");
+            if(type == "signup") navigate("/signin")
+            else navigate("/blogs");
         } catch (e) {
             console.error("Error during authentication:");
         }
