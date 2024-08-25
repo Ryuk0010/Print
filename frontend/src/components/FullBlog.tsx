@@ -29,7 +29,7 @@ export const FullBlog = ({blog}: {blog: Blog}) => {
                         </div>
                     </div>
                     <div className="text-2xl font-medium text-slate-400 pt-4">
-                        Author's details are not updated yet
+                        The Author details aren't yet updated
                     </div>
                 </div>
             </div>
